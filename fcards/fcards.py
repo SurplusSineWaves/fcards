@@ -5,6 +5,7 @@ import glob
 import os
 import textwrap as tw
 import csv
+import math
 
 HOME_DIR = os.path.expanduser('~')
 
@@ -90,9 +91,12 @@ def input_box(stdscr, title=None):
         x, y = w//2-len(text)//2, h//2
         stdscr.clear()
         if title!=None:
-            x_, y_ = w//2-len(title)//2, h//2-2
-            stdscr.addstr(y_, x_, title)
-        stdscr.addstr(y, x, text)
+            i = len(tw.wrap(title, int(w*0.9))) + max(len(tw.wrap(text, int(w*0.9)))//2+1, 1)
+            x_, y_ = w//2-len(title)//2, h//2-i
+            addwrappedstr(stdscr, y_, x_, title)
+        if text=='':
+            stdscr.move(y, x)
+        addwrappedstr(stdscr, y, x, text, center_y=True)
         stdscr.refresh()
         c = stdscr.getch()
         if c == curses.KEY_ENTER or c in [10, 13]:
@@ -173,7 +177,7 @@ def edit(stdscr):
             cards = csv.reader(open(cardfile), delimiter=',')
             cards = [row for row in cards]
         
-        menu_cards = [', '.join(elem) for elem in cards] + ["New Card"]
+        menu_cards = [' || '.join(elem) for elem in cards] + ["New Card"]
 
         while True:
 
@@ -199,7 +203,7 @@ def edit(stdscr):
                     cards.append([f, b])
                 else:
                     cards[selected] = [f, b]
-                menu_cards = [', '.join(elem) for elem in cards] + ["New Card"]
+                menu_cards = [' || '.join(elem) for elem in cards] + ["New Card"]
                 f = open(cardfile, "w")
                 f_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 [f_writer.writerow(cards) for cards in cards]
