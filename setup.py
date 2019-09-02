@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='fcards',
-    version='0.2.0',
+    version='0.2.1',
     author="rzrshr",
     author_email="surplussinewaves@gmail.com",
     description="Digital flashcards",
