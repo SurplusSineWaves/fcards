@@ -6,6 +6,7 @@ import os
 import textwrap as tw
 import csv
 import math
+from copy import copy
 
 HOME_DIR = os.path.expanduser('~')
 
@@ -43,23 +44,36 @@ def addwrappedstr(stdscr, y, x, text, color=None, center_y=False):
 def draw_menu(stdscr, menu, current, title=None, info=None):
     
     h, w = stdscr.getmaxyx()
-    # Normally y_offset increments by 1 and so each menu line is displayed on consecutive lines
-    # However, if the line to be displayed is longer than the width of the screen allows,
-    # addwrappedstr puts it on 2 or more lines instead and so y_offset is incremented by
-    # however many lines that call of addwrappedstr wrote to 
+    title_x, title_y, info_x, info_y = w//2, 0, w//2, h
+    
+    menu_length = sum([len(tw.wrap(item, int(w*0.9))) for item in menu])
+    available_space = h-20
+    menu_visible = copy(menu)
+    i = 0
+    while sum([len(tw.wrap(item, int(w*0.9))) for item in menu_visible]) > available_space:
+        if i%2==0:
+            if current != 0:
+                menu_visible.pop(0)
+                current -= 1
+        else:
+            if current != len(menu_visible)-1:
+                menu_visible.pop()
+        i+=1
+    
     y_offset = 0
-    for i, elem in enumerate(menu):
-        x, y = w//2-len(elem)//2, h//2-len(menu)//2+y_offset
+    if title != None:
+        title_x, title_y = w//2-len(title)//2, h//2-len(menu_visible)//2-2
+        addwrappedstr(stdscr, title_y, title_x, title)
+    if info != None:
+        info_x, info_y = w//2-len(info)//2, h - 3 - len(tw.wrap(info, int(w*0.9)))
+        addwrappedstr(stdscr, info_y, info_x, info)
+    
+    for i, elem in enumerate(menu_visible):
+        x, y = w//2-len(elem)//2, h//2-len(menu_visible)//2+y_offset
         if i==current:
             y_offset += addwrappedstr(stdscr, y, x, elem, curses.color_pair(1))
         else:
             y_offset += addwrappedstr(stdscr, y, x, elem)
-    if title != None:
-        x, y = w//2-len(title)//2, h//2-len(menu)//2-2
-        addwrappedstr(stdscr, y, x, title)
-    if info != None:
-        x, y = w//2-len(info)//2, h - 3 - len(tw.wrap(info, int(w*0.9)))
-        addwrappedstr(stdscr, y, x, info)
 
 def interactive_menu(stdscr, menu, current, title=None, delete=False, info=None):
     
@@ -161,7 +175,7 @@ def edit(stdscr):
     
     while True:
 
-        cardsets = [cardset[len(HOME_DIR)+8:-4] for cardset in glob.glob(HOME_DIR+"/.cards/*.csv")] + ["New Cardset"]
+        cardsets = ["New Cardset"] + [cardset[len(HOME_DIR)+8:-4] for cardset in glob.glob(HOME_DIR+"/.cards/*.csv")]
         i = "Move: [arrow keys], select: [enter], back: [q], delete: [d]"
         selected = interactive_menu(stdscr, cardsets, current, title='Available Cardsets:', delete=True, info=i)
         if type(selected) == list and selected[0] == "DELETE":
@@ -169,21 +183,21 @@ def edit(stdscr):
             continue
         if selected == "BACK":
             return
-        if selected == len(cardsets)-1:
+        if selected == 0:
             cardfile = HOME_DIR+"/.cards/"+input_box(stdscr, "Select Name:")+".csv"
-            cards = [[]]
+            cards = []
         else: 
             cardfile = HOME_DIR+"/.cards/"+cardsets[selected]+".csv"
             cards = csv.reader(open(cardfile), delimiter=',')
             cards = [row for row in cards]
         
-        menu_cards = [' || '.join(elem) for elem in cards] + ["New Card"]
+        menu_cards = ["New Card"] + [' || '.join(elem) for elem in cards]
 
         while True:
 
             current = 0
-            if len(menu_cards) == 0 or len(menu_cards[0]) == 0:
-                selected = interactive_menu(stdscr, menu_cards[1:], current, title="Cardset Empty:", info=i)
+            if menu_cards == ["New Card"]:
+                selected = interactive_menu(stdscr, menu_cards, current, title="Cardset Empty:", info=i)
             else:
                 selected = interactive_menu(stdscr, menu_cards, current, title="Loaded Cards:", delete=True, info=i)
             if type(selected) == list and selected[0] == "DELETE":
@@ -199,11 +213,11 @@ def edit(stdscr):
             else:
                 f = input_box(stdscr, "Front Of Flashcard:")
                 b = input_box(stdscr, "Back Of Flashcard:")
-                if selected == len(menu_cards)-1:
+                if selected == 0:
                     cards.append([f, b])
                 else:
-                    cards[selected] = [f, b]
-                menu_cards = [' || '.join(elem) for elem in cards] + ["New Card"]
+                    cards[selected-1] = [f, b]
+                menu_cards = ["New Card"] + [' || '.join(elem) for elem in cards]
                 f = open(cardfile, "w")
                 f_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 [f_writer.writerow(cards) for cards in cards]
