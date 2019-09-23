@@ -1,4 +1,3 @@
--Make menus scrollable so that they can be infitely long without crashing the program
 -Add colors (maybe)
 -Logo on the starting menu
 -Change up how certain text element's positions are calculated to make sure they don't look
