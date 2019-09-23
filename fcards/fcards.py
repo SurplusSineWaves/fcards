@@ -18,7 +18,7 @@ current = 0
 if not os.path.isdir(HOME_DIR+"/.cards"):
     os.mkdir(HOME_DIR+"/.cards")
 
-def addwrappedstr(stdscr, y, x, text, color=None, center_y=False):
+def addwrappedstr(stdscr, y, x, text, color=None, center_y=False, cursor_pos=None):
     
     # If center_y is true, we wrap the text such that lines are added above and below the input
     # coordinates such that the text remains centered on the input coordinates 
@@ -27,9 +27,30 @@ def addwrappedstr(stdscr, y, x, text, color=None, center_y=False):
     # previously printed above the input coordinates, so it should only really be used
     # in situations where the text is being printed to the screen in an area where we can
     # be sure there is nothing close to it
+    #
+    # If cursor_pos is fed in, we keep track of the coordinates of the character that
+    # has cursor_pos as an index in text so that the function can return these coordinates
 
     h, w = stdscr.getmaxyx()
-    text = tw.wrap(text, int(w*0.9))    
+    text = tw.wrap(text, int(w*0.9), drop_whitespace=False)
+    line_lengths = [len(line) for line in text]
+    if cursor_pos != None:
+        i = 1
+        while sum(line_lengths[:i]) < cursor_pos:
+            i += 1
+        cursor_pos -= sum(line_lengths[:i-1])
+        if center_y:
+            try:
+                cursor_pos = [w//2 - line_lengths[i-1]//2 + cursor_pos, y+i-len(text)//2-1]
+            except:
+                cursor_pos = [w//2 + cursor_pos, y+i-len(text)//2-1]
+        else:
+            try:
+                cursor_pos = [w//2 - line_lengths[i-1]//2 + cursor_pos, y+i]
+            except:
+                cursor_pos = [w//2 + cursor_pos, y+i]
+
+
     for i, line in enumerate(text):
         if center_y:
             new_x, new_y = w//2-len(line)//2, y+i-len(text)//2
@@ -39,7 +60,7 @@ def addwrappedstr(stdscr, y, x, text, color=None, center_y=False):
             stdscr.addstr(new_y, new_x, line, color)
         else:
             stdscr.addstr(new_y, new_x, line)
-    return len(text)
+    return [len(text), cursor_pos]
 
 def draw_menu(stdscr, menu, current, title=None, info=None):
     
@@ -73,9 +94,9 @@ def draw_menu(stdscr, menu, current, title=None, info=None):
     for i, elem in enumerate(menu_visible):
         x, y = w//2-len(elem)//2, h//2-len(menu_visible)//2+y_offset
         if i==current:
-            y_offset += addwrappedstr(stdscr, y, x, elem, curses.color_pair(1))
+            y_offset += addwrappedstr(stdscr, y, x, elem, curses.color_pair(1))[0]
         else:
-            y_offset += addwrappedstr(stdscr, y, x, elem)
+            y_offset += addwrappedstr(stdscr, y, x, elem)[0]
 
 def interactive_menu(stdscr, menu, current, title=None, delete=False, info=None):
     
@@ -99,10 +120,10 @@ def interactive_menu(stdscr, menu, current, title=None, delete=False, info=None)
         elif c == ord('q'):
             return "BACK"
 
-def input_box(stdscr, title=None):
+def input_box(stdscr, title=None, text=''):
     curses.curs_set(1)
-    text = ''
     h, w = stdscr.getmaxyx()
+    cursor_pos = 0
     while True:
         x, y = w//2-len(text)//2, h//2
         stdscr.clear()
@@ -110,18 +131,23 @@ def input_box(stdscr, title=None):
             i = len(tw.wrap(title, int(w*0.9))) + max(len(tw.wrap(text, int(w*0.9)))//2+1, 1)
             x_, y_ = w//2-len(title)//2, h//2-i
             addwrappedstr(stdscr, y_, x_, title)
-        if text=='':
-            stdscr.move(y, x)
-        addwrappedstr(stdscr, y, x, text, center_y=True)
+        cx, cy = addwrappedstr(stdscr, y, x, text, center_y=True, cursor_pos=cursor_pos)[1]
+        stdscr.move(cy, cx)
         stdscr.refresh()
         c = stdscr.getch()
         if c == curses.KEY_ENTER or c in [10, 13]:
             curses.curs_set(0)
             return text
+        elif c == curses.KEY_LEFT:
+            cursor_pos = max(0, cursor_pos-1)
+        elif c == curses.KEY_RIGHT:
+            cursor_pos = min(len(text), cursor_pos+1)
         elif c == curses.KEY_BACKSPACE or c == 127:
-            text = text[:-1]
+            text = text[:max(0, cursor_pos-1)] + text[cursor_pos:]
+            cursor_pos = max(0, cursor_pos-1)
         else:
-            text += chr(c)
+            text = text[:cursor_pos] + chr(c) + text[cursor_pos:]
+            cursor_pos += 1
 
 def practice(stdscr):
     
@@ -213,8 +239,8 @@ def edit(stdscr):
             if selected == "BACK":
                 break
             else:
-                f = input_box(stdscr, "Front Of Flashcard:")
-                b = input_box(stdscr, "Back Of Flashcard:")
+                f = input_box(stdscr, "Front Of Flashcard:", cards[selected-1][0])
+                b = input_box(stdscr, "Back Of Flashcard:", cards[selected-1][1])
                 if selected == 0:
                     cards.append([f, b])
                 else:
