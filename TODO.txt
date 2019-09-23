@@ -2,4 +2,4 @@
 -Logo on the starting menu
 -Change up how certain text element's positions are calculated to make sure they don't look
  uncentered / rubbish when they are really long / in a cramped part of the screen
- -Possibly add an animation for flipping the flash cards over (maybe)
+-Possibly add an animation for flipping the flash cards over (maybe)
