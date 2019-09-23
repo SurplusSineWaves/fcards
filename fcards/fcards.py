@@ -51,7 +51,9 @@ def draw_menu(stdscr, menu, current, title=None, info=None):
     menu_visible = copy(menu)
     i = 0
     while sum([len(tw.wrap(item, int(w*0.9))) for item in menu_visible]) > available_space:
-        if i%2==0:
+        in_front = sum([len(tw.wrap(item, int(w*0.9))) for item in menu_visible[:current]])
+        behind   = sum([len(tw.wrap(item, int(w*0.9))) for item in menu_visible[current:]])
+        if in_front > behind:
             if current != 0:
                 menu_visible.pop(0)
                 current -= 1
