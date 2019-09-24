@@ -229,7 +229,7 @@ def edit(stdscr):
             else:
                 selected = interactive_menu(stdscr, menu_cards, current, title="Loaded Cards:", delete=True, info=i)
             if type(selected) == list and selected[0] == "DELETE":
-                cards.remove(cards[selected[1]])
+                cards.remove(cards[selected[1]-1]) 
                 menu_cards.remove(menu_cards[selected[1]])
                 f = open(cardfile, "w")
                 f_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
