@@ -123,7 +123,7 @@ def interactive_menu(stdscr, menu, current, title=None, delete=False, info=None)
 def input_box(stdscr, title=None, text=''):
     curses.curs_set(1)
     h, w = stdscr.getmaxyx()
-    cursor_pos = 0
+    cursor_pos = len(text)
     while True:
         x, y = w//2-len(text)//2, h//2
         stdscr.clear()
