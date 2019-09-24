@@ -239,11 +239,13 @@ def edit(stdscr):
             if selected == "BACK":
                 break
             else:
-                f = input_box(stdscr, "Front Of Flashcard:", cards[selected-1][0])
-                b = input_box(stdscr, "Back Of Flashcard:", cards[selected-1][1])
                 if selected == 0:
+                    f = input_box(stdscr, "Front Of Flashcard:", "")
+                    b = input_box(stdscr, "Back Of Flashcard:", "")
                     cards.append([f, b])
                 else:
+                    f = input_box(stdscr, "Front Of Flashcard:", cards[selected-1][0])
+                    b = input_box(stdscr, "Back Of Flashcard:", cards[selected-1][1])
                     cards[selected-1] = [f, b]
                 menu_cards = ["New Card"] + [' || '.join(elem) for elem in cards]
                 f = open(cardfile, "w")
